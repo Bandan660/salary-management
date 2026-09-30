@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+.next/
+out/
+coverage/
+
+# env files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# logs & OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
