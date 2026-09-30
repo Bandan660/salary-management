@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: salary-db
+    environment:
+      POSTGRES_USER: salary
+      POSTGRES_PASSWORD: salary
+      POSTGRES_DB: salary_dev
+    ports:
+      - "5440:5432" # 5433 on host: avoids clashing with a locally installed Postgres
+    volumes:
+      - salary-db-data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salary -d salary_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  salary-db-data:

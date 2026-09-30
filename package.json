@@ -1,0 +1,11 @@
+{
+    "name":"salary-management",
+    "private":true,
+    "workspace":["apps/*"],
+    "scripts":{
+        "db:up":"docker compose up -d",
+        "db-down":"docker compose down",
+        "dev:api":"npm run dev -w apps/api",
+        "test:api":"npm test -w apps/api"
+    }
+}
