@@ -12,7 +12,7 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
 
-  // Single HR user (see docs/Requirements.md). Generate the hash with: npm run hash-password -w apps/api -- "<password>"
+  // Single HR user (see docs/Requirement.md). Generate the hash with: npm run hash-password -w apps/api -- "<password>"
   ADMIN_EMAIL: z.email().transform((v) => v.toLowerCase()),
   ADMIN_PASSWORD_HASH: z.string().startsWith('$2', 'ADMIN_PASSWORD_HASH must be a bcrypt hash'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
