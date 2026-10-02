@@ -5,6 +5,8 @@
   "scripts": {
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate -w apps/api",
+    "db:seed": "npm run db:seed -w apps/api",
     "dev:api": "npm run dev -w apps/api",
     "test:api": "npm test -w apps/api"
   }
