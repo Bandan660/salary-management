@@ -6,6 +6,7 @@ import { env } from './config/env';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { employeesRouter } from './modules/employees/employee.routes';
 import { metaRouter } from './modules/meta/meta.routes';
+import { salariesRouter } from './modules/salaries/salary.routes';
 
 /**
  * Builds the Express app without starting a server.
@@ -25,6 +26,7 @@ export function createApp() {
 
   app.use('/api/meta', metaRouter);
   app.use('/api/employees', employeesRouter);
+  app.use('/api/employees/:id/salaries', salariesRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
