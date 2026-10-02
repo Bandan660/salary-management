@@ -8,7 +8,14 @@ process.env.TEST_DATABASE_URL = TEST_DATABASE_URL;
 
 export default defineConfig({
   test: {
-    env: { NODE_ENV: 'test', DATABASE_URL: TEST_DATABASE_URL },
+    env: {
+      NODE_ENV: 'test',
+      DATABASE_URL: TEST_DATABASE_URL,
+      // Test-only credentials (see src/test/auth.ts). Low bcrypt cost keeps tests fast.
+      ADMIN_EMAIL: 'hr@acme.example',
+      ADMIN_PASSWORD_HASH: '$2b$04$zms08Fvwmx4xlaXOljYpf.23mV9DBDt32g6/q0LJI4I8mI0xY.3mu',
+      JWT_SECRET: 'test-only-secret-that-is-at-least-32-chars',
+    },
     projects: [
       {
         extends: true,

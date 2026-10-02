@@ -1,9 +1,14 @@
-import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../app';
+import { signedInAgent } from '../../test/auth';
 import { createTestEmployee, resetDatabase } from '../../test/db';
 
 const app = createApp();
+let api: Awaited<ReturnType<typeof signedInAgent>>;
+
+beforeAll(async () => {
+  api = await signedInAgent(app);
+});
 
 beforeEach(async () => {
   await resetDatabase();
@@ -17,7 +22,7 @@ describe('POST /api/employees/:id/salaries', () => {
       salaries: [{ amount: '60000', effectiveDate: '2022-01-10' }],
     });
 
-    const res = await request(app)
+    const res = await api
       .post(`/api/employees/${id}/salaries`)
       .send({ amount: '66000', effectiveDate: '2024-04-01', reason: 'Promotion' });
 
@@ -30,7 +35,7 @@ describe('POST /api/employees/:id/salaries', () => {
   it('accepts a future-dated raise without changing the current salary yet', async () => {
     const { id } = await createTestEmployee({ salaries: [{ amount: '100000', effectiveDate: '2022-01-10' }] });
 
-    const res = await request(app)
+    const res = await api
       .post(`/api/employees/${id}/salaries`)
       .send({ amount: '110000', effectiveDate: '2099-01-01' });
 
@@ -42,7 +47,7 @@ describe('POST /api/employees/:id/salaries', () => {
   it('rejects a second record on the same effective date', async () => {
     const { id } = await createTestEmployee({ salaries: [{ amount: '100000', effectiveDate: '2022-01-10' }] });
 
-    const res = await request(app)
+    const res = await api
       .post(`/api/employees/${id}/salaries`)
       .send({ amount: '120000', effectiveDate: '2022-01-10' });
 
@@ -53,7 +58,7 @@ describe('POST /api/employees/:id/salaries', () => {
   it('rejects changes for inactive employees', async () => {
     const { id } = await createTestEmployee({ status: 'INACTIVE' });
 
-    const res = await request(app)
+    const res = await api
       .post(`/api/employees/${id}/salaries`)
       .send({ amount: '1', effectiveDate: '2024-01-01' });
 
@@ -63,13 +68,13 @@ describe('POST /api/employees/:id/salaries', () => {
   it('validates the body', async () => {
     const { id } = await createTestEmployee();
 
-    const res = await request(app).post(`/api/employees/${id}/salaries`).send({ amount: -5 });
+    const res = await api.post(`/api/employees/${id}/salaries`).send({ amount: -5 });
 
     expect(res.status).toBe(400);
   });
 
   it('returns 404 for an unknown employee', async () => {
-    const res = await request(app)
+    const res = await api
       .post('/api/employees/00000000-0000-4000-8000-000000000000/salaries')
       .send({ amount: '1000', effectiveDate: '2024-01-01' });
 
@@ -87,7 +92,7 @@ describe('GET /api/employees/:id/salaries', () => {
       ],
     });
 
-    const res = await request(app).get(`/api/employees/${id}/salaries`);
+    const res = await api.get(`/api/employees/${id}/salaries`);
 
     expect(res.status).toBe(200);
     expect(res.body.map((s: { effectiveDate: string }) => s.effectiveDate)).toEqual(['2022-01-01', '2021-01-01']);

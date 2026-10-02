@@ -1,9 +1,14 @@
-import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../app';
+import { signedInAgent } from '../../test/auth';
 import { createTestEmployee, resetDatabase } from '../../test/db';
 
 const app = createApp();
+let api: Awaited<ReturnType<typeof signedInAgent>>;
+
+beforeAll(async () => {
+  api = await signedInAgent(app);
+});
 
 /**
  * Hand-built population with easy numbers. Current USD salaries of active staff:
@@ -49,7 +54,7 @@ beforeEach(async () => {
 
 describe('GET /api/insights/summary', () => {
   it('computes org-wide stats over active staff in USD', async () => {
-    const res = await request(app).get('/api/insights/summary');
+    const res = await api.get('/api/insights/summary');
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
@@ -69,13 +74,13 @@ describe('GET /api/insights/summary', () => {
   });
 
   it('applies filters', async () => {
-    const res = await request(app).get('/api/insights/summary?country=US');
+    const res = await api.get('/api/insights/summary?country=US');
 
     expect(res.body).toMatchObject({ headcount: 5, medianUsd: 120000, countries: 1 });
   });
 
   it('returns zero headcount and null stats when nothing matches', async () => {
-    const res = await request(app).get('/api/insights/summary?department=Legal');
+    const res = await api.get('/api/insights/summary?department=Legal');
 
     expect(res.body).toMatchObject({ headcount: 0, totalUsd: 0, medianUsd: null });
   });
@@ -83,7 +88,7 @@ describe('GET /api/insights/summary', () => {
 
 describe('GET /api/insights/breakdown', () => {
   it('groups by country, biggest payroll first', async () => {
-    const res = await request(app).get('/api/insights/breakdown?groupBy=country');
+    const res = await api.get('/api/insights/breakdown?groupBy=country');
 
     expect(res.status).toBe(200);
     expect(res.body.rows.map((r: { group: object; headcount: number; totalUsd: number }) => [r.group, r.headcount, r.totalUsd])).toEqual([
@@ -93,7 +98,7 @@ describe('GET /api/insights/breakdown', () => {
   });
 
   it('groups by role (title + level) within a department, across countries', async () => {
-    const res = await request(app).get('/api/insights/breakdown?groupBy=role&department=Engineering');
+    const res = await api.get('/api/insights/breakdown?groupBy=role&department=Engineering');
 
     expect(res.body.rows).toEqual([
       expect.objectContaining({
@@ -108,13 +113,13 @@ describe('GET /api/insights/breakdown', () => {
   });
 
   it('orders levels naturally', async () => {
-    const res = await request(app).get('/api/insights/breakdown?groupBy=level');
+    const res = await api.get('/api/insights/breakdown?groupBy=level');
 
     expect(res.body.rows.map((r: { group: { level: string } }) => r.group.level)).toEqual(['L2', 'L3', 'L4']);
   });
 
   it('rejects an unknown groupBy', async () => {
-    const res = await request(app).get('/api/insights/breakdown?groupBy=salary;DROP TABLE employees');
+    const res = await api.get('/api/insights/breakdown?groupBy=salary;DROP TABLE employees');
 
     expect(res.status).toBe(400);
   });
