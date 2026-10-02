@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { ZodError } from 'zod';
 import { HttpError } from '../lib/http-error';
@@ -23,6 +24,20 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
       error: { message: err.message, details: err.details },
     });
     return;
+  }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    // Unique constraint (e.g. duplicate email): the database is the source of truth.
+    if (err.code === 'P2002') {
+      const fields = (err.meta?.target as string[] | undefined)?.join(', ') ?? 'value';
+      res.status(409).json({ error: { message: `A record with this ${fields} already exists` } });
+      return;
+    }
+    // Record to update/delete not found.
+    if (err.code === 'P2025') {
+      res.status(404).json({ error: { message: 'Not found' } });
+      return;
+    }
   }
 
   // Unknown error: log full details server-side, never leak internals to the client.

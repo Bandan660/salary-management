@@ -27,4 +27,9 @@ export class HttpError extends Error {
   static conflict(message: string) {
     return new HttpError(409, message);
   }
+
+  /** Well-formed request that breaks a business rule (e.g. salary dated before hire). */
+  static unprocessable(message: string) {
+    return new HttpError(422, message);
+  }
 }

@@ -63,4 +63,8 @@ export const JOB_TITLES_BY_DEPARTMENT: Readonly<Record<string, readonly string[]
 
 export const DEPARTMENTS = Object.keys(JOB_TITLES_BY_DEPARTMENT);
 
+export function isJobTitleInDepartment(department: string, jobTitle: string): boolean {
+  return JOB_TITLES_BY_DEPARTMENT[department]?.includes(jobTitle) ?? false;
+}
+
 export const JOB_LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'] as const;

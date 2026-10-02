@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
+import { employeesRouter } from './modules/employees/employee.routes';
+import { metaRouter } from './modules/meta/meta.routes';
 
 /**
  * Builds the Express app without starting a server.
@@ -21,7 +23,8 @@ export function createApp() {
     res.json({ status: 'ok' });
   });
 
-  // Feature routers (employees, salaries, insights, auth) get mounted here in later steps.
+  app.use('/api/meta', metaRouter);
+  app.use('/api/employees', employeesRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
