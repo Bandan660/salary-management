@@ -1,11 +1,18 @@
 const moneyFormatters = new Map<string, Intl.NumberFormat>();
 
-/** "₹24,00,000" style formatting in the currency's own conventions, no decimals. */
+// Digit grouping people expect for a currency, e.g. lakhs for INR: ₹24,00,000.
+const GROUPING_LOCALE: Record<string, string> = { INR: "en-IN" };
+
+/** Format in the currency's own conventions, no decimals (salaries are annual figures). */
 export function formatMoney(amount: number | null | undefined, currency: string): string {
   if (amount === null || amount === undefined) return "—";
   let formatter = moneyFormatters.get(currency);
   if (!formatter) {
-    formatter = new Intl.NumberFormat("en", { style: "currency", currency, maximumFractionDigits: 0 });
+    formatter = new Intl.NumberFormat(GROUPING_LOCALE[currency] ?? "en", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    });
     moneyFormatters.set(currency, formatter);
   }
   return formatter.format(amount);

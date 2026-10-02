@@ -8,12 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, api } from "@/lib/api";
-
-/** Only allow redirects back into this app (prevents open-redirect via ?next=). */
-function safeNextPath(next: string | null): string {
-  // "//host" and "/\host" are protocol-relative URLs to another site.
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
-}
+import { safeNextPath } from "@/lib/safe-redirect";
 
 function LoginForm() {
   const searchParams = useSearchParams();
