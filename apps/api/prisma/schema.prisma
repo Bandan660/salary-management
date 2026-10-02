@@ -1,0 +1,85 @@
+// Data model for ACME salary management.
+// Design notes and reasoning: docs/Architecture.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum JobLevel {
+  L1
+  L2
+  L3
+  L4
+  L5
+  L6
+}
+
+model Employee {
+  id           String         @id @default(uuid()) @db.Uuid
+  employeeCode String         @unique @map("employee_code")
+  firstName    String         @map("first_name")
+  lastName     String         @map("last_name")
+  email        String         @unique
+  /// ISO-3166 alpha-2, e.g. "IN", "US"
+  country      String         @db.Char(2)
+  department   String
+  jobTitle     String         @map("job_title")
+  level        JobLevel
+  hireDate     DateTime       @map("hire_date") @db.Date
+  /// Soft delete: deactivated employees keep their salary history.
+  status       EmployeeStatus @default(ACTIVE)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  salaries SalaryRecord[]
+
+  @@index([country])
+  @@index([department])
+  @@index([jobTitle, level])
+  @@index([status])
+  @@index([lastName, firstName])
+  @@map("employees")
+}
+
+/// Append-only salary history. Current salary = latest record with effectiveDate <= today.
+model SalaryRecord {
+  id            String   @id @default(uuid()) @db.Uuid
+  employeeId    String   @map("employee_id") @db.Uuid
+  /// Annual base salary in local currency.
+  amount        Decimal  @db.Decimal(12, 2)
+  /// ISO-4217. Must exist in exchange_rates so it can always be normalized to USD.
+  currency      String   @db.Char(3)
+  effectiveDate DateTime @map("effective_date") @db.Date
+  reason        String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  exchangeRate ExchangeRate @relation(fields: [currency], references: [currency], onDelete: Restrict)
+
+  /// One salary per employee per effective date keeps "current salary" unambiguous.
+  /// The same index serves the latest-salary lookup (Postgres scans it backwards).
+  @@unique([employeeId, effectiveDate])
+  @@index([currency])
+  @@map("salary_records")
+}
+
+/// Fixed reporting rates: 1 unit of `currency` = `rateToUsd` USD.
+model ExchangeRate {
+  currency  String   @id @db.Char(3)
+  rateToUsd Decimal  @map("rate_to_usd") @db.Decimal(18, 8)
+  asOf      DateTime @map("as_of") @db.Date
+
+  salaries SalaryRecord[]
+
+  @@map("exchange_rates")
+}
