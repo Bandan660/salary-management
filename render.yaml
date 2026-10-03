@@ -1,0 +1,28 @@
+# Render Blueprint for the API. Setup steps: docs/Deployment.md
+services:
+  - type: web
+    name: salary-api
+    runtime: node
+    plan: free
+    region: singapore
+    # --include=dev: NODE_ENV=production would otherwise skip TypeScript and the Prisma CLI.
+    # Migrations run during the build (pre-deploy commands need a paid plan).
+    buildCommand: npm ci --include=dev && npm run build -w apps/api && npm run db:deploy -w apps/api
+    startCommand: npm start -w apps/api
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Neon connection string, entered in the Render dashboard
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false # from: npm run hash-password -w apps/api -- "<password>"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false # the Vercel URL, e.g. https://salary-management.vercel.app
