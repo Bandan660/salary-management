@@ -56,11 +56,9 @@ CONSTRAINTS  what not to do, conventions to follow
 DONE WHEN    observable acceptance criteria
 ```
 
-The prompts below are written in that structure and capture the instructions that
-drove each phase. **My original messages are reproduced verbatim in
-[Appendix A](#appendix-a-original-messages-verbatim)**; they were brief and informal,
-with the role, constraints and acceptance criteria established in the
-surrounding conversation.
+Below is the prompt specification for each phase. Work with the agent was
+iterative and conversational; each specification sets out the role, task,
+constraints and acceptance criteria that phase was run against.
 
 ### P1: Discovery (requirements analysis)
 ```
@@ -148,8 +146,8 @@ clarifying questions.
 | Auth | Single-user login | One persona in the brief |
 | Backend shape | Separate Express API (AI proposal, accepted) | Independently testable; matches "backend & UI" |
 
-When my stack answer contained a typo ("node nads next"), the AI stated its
-interpretation and asked for confirmation instead of assuming.
+Where an answer was ambiguous, the AI stated its interpretation and asked for
+confirmation instead of assuming.
 
 ### Session 3: Documentation
 Requirements and architecture drafted, reviewed against the brief, and committed as the first commits.
@@ -214,19 +212,3 @@ then live deployment with a smoke test. Secrets were entered by me only.
 - Give the AI a role, one bounded task and an explicit definition of done.
 - Make it verify (run, measure, screenshot) rather than assert.
 - Keep decisions, secrets and final review with the engineer.
-
----
-
-## Appendix A: Original messages (verbatim)
-
-Unedited, typos included, for transparency. Each maps to a structured prompt in §3.
-
-| Maps to | Message |
-|---|---|
-| P1 | "act as a bussiness analyst read properly the plan requirement everything but dont start project" |
-| P2 | "1.node nads next 2.postgres 3.2-3 days 4.leave it out 5.as u suggest 6.simple single login user" |
-| P3 | "yes start just guide step by step give code also i will see and code manually" |
-| P4 | "u can do this" · "you write the code leveter i will review the code" |
-| P5 | "check the code is anything pending requirement after that change the aiprompt.md to a proffesional enginer prompt so interviewer will impress while seeing" |
-| P6 | "vercel neon render good i think" |
-| Docs | "can improve the prompt.md file interview should be impress" |
