@@ -1,190 +1,232 @@
-# AI Usage Log
+# AI-Assisted Engineering Log
 
-> How I used AI on this project: what I asked, what I accepted, what I
-> changed, and how I verified it.
+How AI was used to build this project: the operating model, the prompts, how
+output was verified, and every case where AI output was corrected.
 
-## 1. My approach
+| | |
+|---|---|
+| **Tool** | Claude Code (Claude Opus) in VS Code: agentic, with terminal, file and browser access |
+| **Scope of use** | Requirements analysis, design, implementation, testing, end-to-end verification, deployment setup |
+| **Human ownership** | All scope and architecture decisions; review of every commit; production credentials |
+| **Outcome** | 26 incremental commits · 94 automated tests · green CI · deployed · **8 AI-output defects caught and fixed before release** (§5) |
 
-**Tool:** Claude Code (Claude Opus), used inside VS Code.
+---
 
-I gave the AI a specific **role** in each phase instead of asking it to
-"build the app":
+## 1. Operating model
 
-| Phase | AI role | My role |
+AI was used as a **role-scoped collaborator**, never as "build me an app". Each
+phase had an explicit role, a bounded task and a definition of done.
+
+| Phase | AI role | Engineer (me) |
 |---|---|---|
-| Requirements | Business analyst: find explicit and implied requirements, risks and open questions | Answer the questions, make the scope calls |
-| Design | Architect: propose stack, data model, API | Challenge trade-offs, approve or change |
-| Build (early steps) | Pair programmer: give code step by step | Type the code myself, read and understand it |
-| Build (later steps) | Implementer: write code, run it, commit in small steps | Review every diff and commit; own the decisions |
-| Quality | Tester/reviewer: tests, end-to-end checks, screenshots | Decide what to fix |
+| Discovery | Business analyst | Answer questions, make every scope call |
+| Design | Architect | Challenge trade-offs, approve or redirect |
+| Foundation | Pair programmer (guided) | **Typed the code myself** from step-by-step guidance |
+| Build | Implementer, in small verified slices | Reviewed each slice and commit; owned decisions |
+| Quality | Tester and reviewer | Decided what to fix and what to accept |
+| Release | DevOps assistant | Created accounts; handled all secrets myself |
 
-### Guardrails I set
-1. **No big-bang generation.** Work went step by step with one commit per
-   feature slice, so every change is small enough to review. I typed the early
-   steps myself; for later steps the AI wrote the code and I reviewed the
-   commits. The commit history shows which is which.
-2. **Decisions stay with me.** The AI proposes options and I choose. Every
-   scope decision is recorded with reasoning in `Requirement.md`.
-3. **Verify, don't trust.** AI output is checked by running it, writing tests,
-   and reading official docs (Prisma, Next.js, Postgres).
-4. **No real or sensitive data.** Only the assessment brief and synthetic seed
-   data were shared with the AI. No secrets or `.env` values.
-5. **Docs before code.** Requirements and architecture were committed before
-   any implementation, as the brief asks.
+The commit history reflects this split: early scaffold commits were hand-typed;
+later feature commits were AI-implemented and human-reviewed.
+
+## 2. Guardrails (the working agreement)
+
+1. **Docs before code.** Requirements and architecture committed before any implementation.
+2. **Small slices.** One feature per commit, so each change is reviewable on its own.
+3. **Definition of done for every slice**, enforced before each commit:
+   - unit and integration tests pass · typecheck passes (tests included) · lint is clean
+   - exercised for real: against the 10k dataset for API work, in a real browser for UI work
+4. **Verify, don't trust.** Version-sensitive claims (Next.js 16, TypeScript 7, Prisma 6)
+   were checked against the installed packages' own docs, not model memory.
+5. **Decisions stay human.** The AI proposes options with trade-offs; I choose; the
+   reasoning is recorded in [Requirement.md](Requirement.md) and [Architecture.md](Architecture.md).
+6. **Data and secret hygiene.** Only the brief and synthetic data were shared.
+   Credentials were generated and entered by me; the AI read env files with values
+   masked and never printed a connection string or password.
+
+## 3. Prompt design
+
+Every working prompt followed the same structure:
+
+```
+ROLE         who the model should act as
+CONTEXT      what exists already, constraints of the environment
+TASK         one bounded objective
+CONSTRAINTS  what not to do, conventions to follow
+DONE WHEN    observable acceptance criteria
+```
+
+The prompts below are written in that structure and capture the instructions that
+drove each phase. **My original messages are reproduced verbatim in
+[Appendix A](#appendix-a-original-messages-verbatim)**; they were brief and informal,
+with the role, constraints and acceptance criteria established in the
+surrounding conversation.
+
+### P1: Discovery (requirements analysis)
+```
+ROLE         Senior business analyst.
+CONTEXT      Take-home brief: salary management for an HR manager, 10,000 employees,
+             multiple countries, currently managed in Excel.
+TASK         Analyse the brief. Separate explicit requirements from implied ones,
+             identify risks, and list the decisions that must be made before building.
+CONSTRAINTS  Analysis only: do not start the project or write code.
+DONE WHEN    Requirements are traced to the brief, implied requirements are justified,
+             and open questions are ready for me to answer.
+```
+**Result:** surfaced the two decisions that shaped the whole design:
+*multi-country ⇒ currency normalization* and *salary changes ⇒ append-only history*.
+Also: analytics is a first-class feature, not an add-on to CRUD.
+
+### P2: Scope and architecture
+```
+ROLE         Software architect.
+CONTEXT      My answers: Node + Next.js, PostgreSQL, 2–3 days, single-user login,
+             no CSV import; pay-equity analytics deferred on your recommendation.
+TASK         Propose stack, data model, API surface and a delivery plan.
+CONSTRAINTS  Optimize for correctness and reviewability over feature count.
+DONE WHEN    A one-page requirements doc (including exclusions and reasons) and an
+             architecture doc with diagrams are ready to commit before any code.
+```
+**My decisions:** see the table in §4, Session 2.
+
+### P3: Guided foundation
+```
+ROLE         Pair programmer.
+TASK         Guide me step by step through the monorepo, Docker Postgres and Express
+             scaffold, giving code I will type and run myself.
+CONSTRAINTS  One step at a time; check my environment before assuming anything.
+DONE WHEN    Each step runs on my machine and is committed separately.
+```
+
+### P4: Implementation in verified slices
+```
+ROLE         Implementer; I review.
+CONTEXT      Agreed architecture; scaffold in place.
+TASK         Build schema → domain logic → 10k seed → employees API → salary history
+             → insights → auth → UI, one slice at a time.
+CONSTRAINTS  Money in Decimal, never float. Analytics in SQL. No user input in SQL.
+             Integration tests on a separate *_test database. Follow existing code style.
+DONE WHEN    Per slice: tests + typecheck + lint pass, behaviour exercised on the 10k
+             dataset (API) or in a real browser (UI), committed with a descriptive message.
+```
+
+### P5: Requirements audit
+```
+ROLE         QA lead.
+TASK         Audit the delivered code against the brief and Requirement.md.
+DONE WHEN    Every requirement maps to where it is met; gaps are fixed or explicitly deferred.
+```
+**Result:** found the job title filter missing from the UI (§5, #8); fixed and verified.
+
+### P6: Release
+```
+ROLE         DevOps assistant.
+TASK         Prepare deployment for Vercel (web), Render (API) and Neon (Postgres).
+CONSTRAINTS  I create the accounts and handle every secret; never print credentials.
+DONE WHEN    Config lives in the repo, production mode is tested locally first,
+             and the live URL passes a smoke test.
+```
 
 ---
 
-## 2. Session log
+## 4. Session log
 
-### Session 1: Requirements analysis
-**Goal:** Understand the brief deeply before writing anything.
+### Session 1: Discovery
+Explicit requirements (R1–R12) traced to the brief; implied requirements
+(currency normalization, salary history, server-side pagination, analytics as
+core); risks (SQLite on ephemeral hosting, non-deterministic tests); six
+clarifying questions.
 
-**Prompt (verbatim):**
-> "act as a business analyst read properly the plan requirement everything
-> but dont start project"
-
-**Why I framed it this way:** I wanted analysis, not code. Assigning a BA role
-and forbidding implementation stopped the AI from jumping ahead.
-
-**What the AI produced:**
-- Explicit requirements (R1–R12) traced to sections of the brief
-- Implied requirements, the most valuable part:
-  - *Multi-country ⇒ multi-currency.* Summing INR and USD is meaningless,
-    so the dashboard needs normalization to a reporting currency.
-  - *"Answer questions about how the org pays people" ⇒ analytics is a
-    first-class feature,* not an add-on to CRUD.
-  - *10k rows ⇒ server-side pagination and DB-level aggregation.*
-  - *Salary changes ⇒ history,* not overwrites.
-- Risks (e.g. SQLite on ephemeral hosting, non-deterministic tests)
-- Six clarifying questions for me
-
-**What I took from it:** The currency and salary-history insights shaped the
-data model directly (see `Architecture.md`).
-
----
-
-### Session 2: Scope and stack decisions
-**Goal:** Answer the AI's clarifying questions and lock the scope.
-
-**My answers and reasoning:**
-
-| Question | My decision | Why |
+### Session 2: Decisions
+| Question | Decision | Rationale |
 |---|---|---|
-| Stack | Node (Express) + Next.js | Matches the role I applied for |
-| Database | **PostgreSQL** over SQLite | SQLite files don't persist on most free hosting; Postgres also has `percentile_cont` built in for medians |
-| Timeline | 2–3 days | Real constraint, so scope had to be tight |
-| Excel/CSV import | **Excluded** | Tempting, but a good import needs validation and error-reporting UX; a weak one would hurt more than help |
-| Pay-equity analytics | **Excluded** (accepted AI's recommendation after checking its reasoning) | A raw gender gap without controlling for role, level and tenure is misleading, and it needs legal/privacy review |
-| Auth | Simple single-user login | One persona in the brief; full user management is out of scope |
+| Stack | Node (Express) + Next.js | Matches the role applied for |
+| Database | **PostgreSQL** over SQLite | Persists on free hosting; built-in `percentile_cont` for medians |
+| Timeline | 2–3 days | Real constraint; scope kept tight |
+| CSV import | **Excluded** | Needs validation and error-reporting UX to be safe; a weak import does harm |
+| Pay-equity analytics | **Excluded** (AI recommendation, reasoning checked) | A raw gap without controlling for role, level and tenure misleads; needs legal review |
+| Auth | Single-user login | One persona in the brief |
+| Backend shape | Separate Express API (AI proposal, accepted) | Independently testable; matches "backend & UI" |
 
-**Verification moment:** My stack answer had a typo ("node nads next"). The AI
-stated its interpretation (Node + Next.js) and asked me to confirm instead
-of silently assuming. I confirmed before moving on.
-
-**AI suggestion I accepted after review:** A separate Express backend instead
-of Next.js API routes. Trade-off: two deployables, but clearer separation
-and independent testability, and it matches the brief's "backend & UI" wording.
-
----
+When my stack answer contained a typo ("node nads next"), the AI stated its
+interpretation and asked for confirmation instead of assuming.
 
 ### Session 3: Documentation
-**Prompt:** "yes start just guide step by step give code also i will see and
-code manually"
+Requirements and architecture drafted, reviewed against the brief, and committed as the first commits.
 
-**Output:** Drafts of `Requirement.md`, `Architecture.md` (Mermaid diagrams,
-ER model, API table) and this log.
+### Session 4: Foundation (hand-typed, AI-checked)
+- The AI inspected the machine first (`node -v`, `docker -v`, `psql --version`) and avoided the local Postgres port.
+- When I reported a step done, the AI **verified instead of trusting**: it ran the tests and found a
+  `"workspace"` vs `"workspaces"` typo, a script-name typo, an uncommitted design doc,
+  and missing files. Each fix went into its own commit.
 
-**My review:** Read each draft against the brief to confirm the scope matched
-what I'd decided, then committed docs as the first commits.
+### Session 5: Backend (AI-implemented, human-reviewed)
+Verification went beyond "tests pass":
+- inspected the generated migration and indexes in `psql`; proved the `CHECK` constraint rejects bad data
+- sanity-checked seed realism with SQL (median pay by country)
+- insights tests assert **hand-computed percentiles** (P25 of 30k…160k = 85k), so the SQL math itself is tested
+- timed every endpoint on 10k employees (15–95 ms)
+- proved integration tests never touch dev data, and added a guard that refuses to reset any DB not named `*_test`
 
-**Prompt:** "can improve the prompt.md file interview should be impress"
-**Output:** This log's structure (roles, guardrails, verbatim prompts, an
-overrides table). The AI told me to keep the overrides table *real* rather
-than invent entries, and to keep prompts verbatim, typos included.
+### Session 6: Frontend (verified in a real browser)
+- Next.js 16 shipped a notice that its APIs changed; the bundled docs were read before writing code.
+- A scripted headless-browser journey (login → search → create → raise → duplicate email)
+  with screenshots caught **two UX issues and one production bug** (§5).
+- Chart colours were validated for contrast and colour-vision safety, not chosen by eye.
 
----
-
-### Session 4: Scaffold (I typed it, AI checked my work)
-**Goal:** Monorepo, local Postgres, Express scaffold.
-
-**What happened:**
-- Before giving setup steps, the AI checked my machine (`node -v`, `docker -v`,
-  `psql --version`), found a local Postgres 17 on 5432, and mapped the Docker DB
-  to 5433.
-- `docker compose up` then failed: 5433 was **also** taken, by a container
-  from another project. Found it with `docker ps` + `Get-NetTCPConnection`
-  and moved to 5440.
-- When I said Step 4 was done, the AI checked instead of trusting me. It ran
-  the tests, found `"workspace"` instead of `"workspaces"`, a `db-down` script
-  typo, an uncommitted `Architecture.md`, and that Step 4 files didn't exist
-  yet. Each fix went into its own small commit.
+### Session 7: Audit and release
+Requirements audit (P5), planning doc, deployment config, local production-mode test,
+then live deployment with a smoke test. Secrets were entered by me only.
 
 ---
 
-### Session 5: Backend build (AI implements, I review)
-**Prompts (verbatim):** "u can do this" · "you write the code leveter i will review the code"
+## 5. Defects in AI output: caught and corrected
 
-**Order:** schema → domain logic + unit tests → deterministic seed → employees
-API → salary history → insights → auth. One commit per step, and each step
-was only committed after tests, typecheck and a real run against the 10k data.
-
-**How it was verified (not just "tests pass"):**
-- Ran the generated SQL migration and inspected tables and indexes in `psql`.
-- Checked that the `CHECK` constraint really rejects a negative rate.
-- Sanity-checked the seed data with SQL (median pay by country looks realistic).
-- Insights tests assert **hand-computed percentiles**
-  (e.g. P25 of 30k, 80k, 100k, 120k, 140k, 160k = 85k).
-- Timed every endpoint on 10k employees (all under 100 ms).
-- Confirmed integration tests never touch the dev DB (row count unchanged)
-  and added a guard that refuses to reset any database not named `*_test`.
-
----
-
-### Session 6: Frontend (AI implements, verifies in a real browser)
-**What happened:**
-- Next.js 16 shipped an `AGENTS.md` warning that APIs changed (Middleware is
-  now `proxy.ts`). The AI read the bundled Next.js docs before writing code
-  instead of relying on older knowledge.
-- Ran a headless-browser end-to-end flow (login → search → create employee →
-  record raise → duplicate email) and took screenshots, which caught
-  **two UX problems** and **one real backend bug** (see table below).
-
----
-
-<!-- Copy this template for every new session -->
-### Session N: <title>
-**Goal:**
-**Prompt (verbatim):**
-**AI output (summary):**
-**Accepted / changed / rejected, and why:**
-**How I verified:** (test written, ran it, checked docs, EXPLAIN ANALYZE, …)
-
----
-
-## 3. Where I overrode or corrected the AI
-> Kept honest and updated as I build. This is where my own judgment shows.
-
-| # | First version | Corrected to | How it was caught |
+| # | AI's first version | Corrected to | How it was caught |
 |---|---|---|---|
-| 1 | Docker DB on port 5433 | Port 5440 | `docker compose up` failed; another project's container held 5433. The AI had checked installed tools but not running containers. |
-| 2 | `moduleResolution: "Node"` in tsconfig | `NodeNext` | npm installed TypeScript 7, which removed the old option. Caught by running `tsc`. |
-| 3 | Planned `/insights/by-country`, `/by-department`, `/by-role` | One `/insights/breakdown?groupBy=` with filters | HR's real questions are combinations; one whitelisted, tested query covers all of them. |
-| 4 | Node's default 5s keep-alive on the API | 65s keep-alive | End-to-end browser run showed an intermittent 500; Next's log showed `ECONNRESET` on a reused socket. Reproduced with idle gaps, fixed, and re-verified. |
-| 5 | INR shown as ₹2,400,000 | ₹24,00,000 (lakh grouping) | A unit test exposed that the code didn't match its own comment. Indian HR reads salaries in lakhs. |
-| 6 | Dashboard "Group by" dropdown showed just "Country" | "Group by: Country", no "All" option | Seen in the screenshot: it looked like a duplicate of the Country filter. |
-| 7 | Median chart in payroll order | Sorted by median (levels stay L1→L6) | Seen in the screenshot: an unsorted bar chart is hard to read. |
+| 1 | Docker DB on port 5433 | 5440 | `docker compose up` failed: another project's container held 5433. The AI had checked installed tools, not running containers. |
+| 2 | `moduleResolution: "Node"` | `NodeNext` | `tsc` failed: TypeScript 7 removed the option. Model knowledge lagged the installed version. |
+| 3 | Three per-dimension insights endpoints | One `breakdown?groupBy=` endpoint | Design review: HR's questions are combinations of dimensions. |
+| 4 | Node's default 5 s keep-alive | 65 s | Browser E2E showed an intermittent 500; logs showed `ECONNRESET` on a reused proxy socket. Reproduced with idle gaps, fixed, re-verified. |
+| 5 | INR as ₹2,400,000 | ₹24,00,000 (lakh grouping) | A unit test showed the code contradicted its own comment. |
+| 6 | "Group by" dropdown labelled just "Country" | "Group by: Country" | Screenshot review: read as a duplicate filter. |
+| 7 | Median chart in payroll order | Sorted by median | Screenshot review: unsorted bars are hard to compare. |
+| 8 | Job title filter missing from the UI | Added to directory and insights | Requirements audit against Requirement.md (P5). |
 
-**Checked and found correct (not changed):**
-- shadcn added an unfamiliar dependency `cn`. Verified on npm that it's
-  published by shadcn from `shadcn-ui/cn` before trusting it.
-- A new employee showed exactly **0.0%** vs the peer median. That looked like a
-  bug (comparing someone to themself), but SQL showed they ranked exactly
-  27th of 53, i.e. the median. Kept, and labelled "including this employee".
+**Investigated and confirmed correct (no change):**
+- An unfamiliar dependency `cn` added by shadcn: verified on npm as published by shadcn (`shadcn-ui/cn`) before trusting it.
+- An employee at exactly **0.0%** vs the peer median looked like a self-comparison bug;
+  SQL showed they ranked 27th of 53, i.e. the median. Kept, and labelled "including this employee".
 
-## 4. Where AI helped most / least
-*(Fill in at the end of the project.)*
-- **Most:** 
-- **Least / needed most correction:** 
+---
 
-## 5. Takeaways
-*(Fill in at the end: what I'd do differently in how I use AI next time.)*
+## 6. Assessment of AI use
+
+**Highest leverage**
+- *Discovery:* turning a short brief into implied requirements and decisions (currency, history) early, when they were cheap to act on.
+- *Verification at scale:* hand-computed test oracles, timing on 10k rows, and scripted browser journeys found defects that unit tests alone would have missed (#4).
+
+**Needed the most oversight**
+- *Environment and version specifics:* ports, TypeScript 7, Next.js 16 APIs (#1, #2). Anything version-dependent was checked against the installed packages.
+- *UX judgment:* layouts that compiled correctly but read poorly were only caught by looking at screenshots (#6, #7).
+
+**What I'd keep doing**
+- Give the AI a role, one bounded task and an explicit definition of done.
+- Make it verify (run, measure, screenshot) rather than assert.
+- Keep decisions, secrets and final review with the engineer.
+
+---
+
+## Appendix A: Original messages (verbatim)
+
+Unedited, typos included, for transparency. Each maps to a structured prompt in §3.
+
+| Maps to | Message |
+|---|---|
+| P1 | "act as a bussiness analyst read properly the plan requirement everything but dont start project" |
+| P2 | "1.node nads next 2.postgres 3.2-3 days 4.leave it out 5.as u suggest 6.simple single login user" |
+| P3 | "yes start just guide step by step give code also i will see and code manually" |
+| P4 | "u can do this" · "you write the code leveter i will review the code" |
+| P5 | "check the code is anything pending requirement after that change the aiprompt.md to a proffesional enginer prompt so interviewer will impress while seeing" |
+| P6 | "vercel neon render good i think" |
+| Docs | "can improve the prompt.md file interview should be impress" |

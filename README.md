@@ -15,6 +15,7 @@ The API runs on Render's free tier and sleeps when idle, so the first load can t
 | Doc | What's in it |
 |---|---|
 | [docs/Requirement.md](docs/Requirement.md) | One-page requirements: goal, scope, what's left out and why |
+| [docs/Planning.md](docs/Planning.md) | Delivery plan, build order, what changed and why, requirements traceability |
 | [docs/Architecture.md](docs/Architecture.md) | Design, data model, API, trade-offs, security, performance, testing |
 | [docs/AiPrompts.md](docs/AiPrompts.md) | How AI was used: prompts, guardrails, what was corrected and how it was caught |
 | [docs/Deployment.md](docs/Deployment.md) | Vercel (web) + Render (API) + Neon (Postgres), step by step |
