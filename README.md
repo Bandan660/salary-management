@@ -3,6 +3,9 @@
 Web app for ACME's HR manager to **manage salary data for 10,000 employees across
 10 countries** and **answer "how do we pay people?"**, replacing a set of spreadsheets.
 
+**Live demo:** https://salary-management-indol.vercel.app (login details shared separately).
+The API runs on Render's free tier and sleeps when idle, so the first load can take ~50 s.
+
 - **Insights**: headcount, payroll, median and spread, grouped by country, department,
   level or role, with filters. Everything is normalized to USD at fixed rates.
 - **Employees**: search, filter and sort 10k people, with each person's current salary in local currency and in USD.
