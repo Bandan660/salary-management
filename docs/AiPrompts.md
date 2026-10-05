@@ -8,7 +8,7 @@ output was verified, and every case where AI output was corrected.
 | **Tool** | Claude Code (Claude Opus) in VS Code: agentic, with terminal, file and browser access |
 | **Scope of use** | Requirements analysis, design, implementation, testing, end-to-end verification, deployment setup |
 | **Human ownership** | All scope and architecture decisions; review of every commit; production credentials |
-| **Outcome** | 26 incremental commits · 94 automated tests · green CI · deployed · **8 AI-output defects caught and fixed before release** (§5) |
+| **Outcome** | One commit per slice (see `git log`) · 94 automated tests · green CI · deployed · **8 AI-output defects caught and fixed before release** (§5) |
 
 ---
 
