@@ -26,8 +26,9 @@ phase had an explicit role, a bounded task and a definition of done.
 | Quality | Tester and reviewer | Decided what to fix and what to accept |
 | Release | DevOps assistant | Created accounts; handled all secrets myself |
 
-The commit history reflects this split: early scaffold commits were hand-typed;
-later feature commits were AI-implemented and human-reviewed.
+The commit history reflects this split: the documentation, workspace and Docker
+setup commits were hand-typed; from the API scaffold onward, commits were
+AI-implemented and human-reviewed.
 
 ## 2. Guardrails (the working agreement)
 
@@ -152,7 +153,7 @@ confirmation instead of assuming.
 ### Session 3: Documentation
 Requirements and architecture drafted, reviewed against the brief, and committed as the first commits.
 
-### Session 4: Foundation (hand-typed, AI-checked)
+### Session 4: Foundation (setup hand-typed, AI-checked)
 - The AI inspected the machine first (`node -v`, `docker -v`, `psql --version`) and avoided the local Postgres port.
 - When I reported a step done, the AI **verified instead of trusting**: it ran the tests and found a
   `"workspace"` vs `"workspaces"` typo, a script-name typo, an uncommitted design doc,
