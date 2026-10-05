@@ -28,6 +28,7 @@ const MAX_CHART_ROWS = 20;
 interface Filters {
   country?: string;
   department?: string;
+  jobTitle?: string;
   level?: string;
 }
 
@@ -105,8 +106,22 @@ export function InsightsDashboard() {
         <FilterSelect
           label="Department"
           value={filters.department}
-          onChange={(department) => setFilters((f) => ({ ...f, department }))}
+          onChange={(department) =>
+            setFilters((f) => ({
+              ...f,
+              department,
+              // Keep the title filter only if it still belongs to the chosen department.
+              jobTitle: f.jobTitle && meta.jobTitlesFor(department).includes(f.jobTitle) ? f.jobTitle : undefined,
+            }))
+          }
           options={meta.data?.departments.map((d) => ({ value: d.name, label: d.name })) ?? []}
+        />
+        <FilterSelect
+          label="Job title"
+          value={filters.jobTitle}
+          onChange={(jobTitle) => setFilters((f) => ({ ...f, jobTitle }))}
+          options={meta.jobTitlesFor(filters.department).map((t) => ({ value: t, label: t }))}
+          className="w-60"
         />
         <FilterSelect
           label="Level"

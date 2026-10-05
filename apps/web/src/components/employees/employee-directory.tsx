@@ -23,7 +23,7 @@ import type { Employee, EmployeeDetail, Paginated } from "@/lib/types";
 import { EmployeeForm, type EmployeeFormValues } from "./employee-form";
 
 const PAGE_SIZE = 25;
-const FILTER_KEYS = ["search", "country", "department", "level", "status"] as const;
+const FILTER_KEYS = ["search", "country", "department", "jobTitle", "level", "status"] as const;
 
 type SortField = "name" | "employeeCode" | "hireDate" | "country" | "department" | "level";
 
@@ -38,6 +38,7 @@ function useDirectoryParams() {
     search: get("search"),
     country: get("country"),
     department: get("department"),
+    jobTitle: get("jobTitle"),
     level: get("level"),
     status: get("status") ?? "ACTIVE",
     sortBy: (get("sortBy") ?? "name") as SortField,
@@ -135,8 +136,21 @@ export function EmployeeDirectory() {
         <FilterSelect
           label="Department"
           value={params.department}
-          onChange={(department) => update({ department })}
+          onChange={(department) =>
+            update({
+              department,
+              // Keep the title filter only if it still belongs to the chosen department.
+              jobTitle: params.jobTitle && meta.jobTitlesFor(department).includes(params.jobTitle) ? params.jobTitle : undefined,
+            })
+          }
           options={meta.data?.departments.map((d) => ({ value: d.name, label: d.name })) ?? []}
+        />
+        <FilterSelect
+          label="Job title"
+          value={params.jobTitle}
+          onChange={(jobTitle) => update({ jobTitle })}
+          options={meta.jobTitlesFor(params.department).map((t) => ({ value: t, label: t }))}
+          className="w-60"
         />
         <FilterSelect
           label="Level"
@@ -162,7 +176,7 @@ export function EmployeeDirectory() {
             variant="ghost"
             onClick={() => {
               setSearchInput("");
-              update({ search: undefined, country: undefined, department: undefined, level: undefined, status: undefined });
+              update(Object.fromEntries(FILTER_KEYS.map((key) => [key, undefined])));
             }}
           >
             Clear filters
